@@ -3,6 +3,8 @@
 
 # Add in some scenario somewhere where you save the last timestamp in the filename, strsplit the filename and check to see if the timestamp is in your time, filter it, etc. etc save
 
+# There is almost certainly a timestamp shift issue with reading in old data and appending new data to it NEEDS TO BE FIXED NEXT TIME I GET NEW DATA
+
 # --------- SET UP ------------
 # Load libraries
 library(tidyverse)
@@ -35,20 +37,22 @@ dat$timestamp_est <- as.POSIXct(dat$unixtime, origin = "1970-01-01")
 
 # Remove extra columns
 dat <- dat %>%
-  select(-c("V28", "BoxTemp", "B-Volts"))
+  select(-c("V28", "BoxTemp"))
 
 # --------- REMOVE OUT-OF-WATER TIMES -------------
 # Remove times when oysters were out of water (removed cages from water or something)
 oow_start <- ymd_hms("2024-10-03 06:30:00") # I believe I ended the system at this time
 oow_end <- ymd_hms("2024-10-03 10:38:00") # Oysters deployed after this time
-dat_end <- ymd_hms("2024-10-06 11:30:00") # Oysters removed from water after this time
+oow_start2 <- ymd_hms("2024-10-06 11:30:00") # Oysters removed from water after this time
+oow_end2 <- ymd_hms("2024-10-06 12:00:00")
 
 # Set tz of timestamps
 tz(dat$timestamp_est) <- "UTC"
 
 # Filter timestamps out
 dat <- dat %>%
-  filter(timestamp_est < dat_end & (timestamp_est < oow_start | timestamp_est > oow_end))
+  filter((timestamp_est < oow_start | timestamp_est > oow_end) & 
+           (timestamp_est < oow_start2 | timestamp_est > oow_end2))
 
 # --------- QAQC Num.1 ---------------------------
 # Create differences between times
@@ -129,7 +133,7 @@ file_exists <- list.files(combined_dir, pattern = "combined", full.names = T)
 # If there is already a file, then...
 if(length(file_exists) == 1){
   # Read in old combined file
-  old_dat_combined <- fread(dat_combined)
+  old_dat_combined <- fread(file_exists)
   
   # Rbind new dat_combined to old_dat combined
   new_dat_combined <- rbind(old_dat_combined, dat_combined)
@@ -150,26 +154,30 @@ if(length(file_exists) == 1){
   # If there are no duplicated rows
   } else if(sum(summary_table$count > 1) == 0){
     # Make sure timestamp is character format
-    new_dat_combined$timestamp_est <- format(new_dat_combined$timestamp_est, format = "%Y-%m-%d %H:%M:%S")
+    new_dat_combined$timestamp_est <- format(new_dat_combined$timestamp_est, 
+                                             format = "%Y-%m-%d %H:%M:%S")
     
     # Are there any timestamps with missing times?
     sum(!grepl("....-..-.. ..:..:..", new_dat_combined$timestamp_est))
     
     # Get timestamp
-    latest_time <- gsub(":", " ", max(new_dat_combined$timestamp_est))
+    latest_time <- gsub(":", "", max(new_dat_combined$timestamp_est))
     
     # Write data
     write.csv(new_dat_combined, 
               file = file.path(combined_dir, 
                                paste0(latest_time, "_lamprey_data_combined.csv")),
               row.names = F)
+    
+    file.remove(file_exists)
   }
 } else if(length(file_exists) > 1){
   warning("There is more than one combined file. Resolve any duplicates.")
 } else {
   # If no data already exists....
   # Save, adding in any midnight timestamps
-  dat_combined$timestamp_est <- format(dat_combined$timestamp_est, format = "%Y-%m-%d %H:%M:%S")
+  dat_combined$timestamp_est <- format(dat_combined$timestamp_est, 
+                                       format = "%Y-%m-%d %H:%M:%S")
   
   # Are there any timestamps where midnight time is missing?
   sum(!grepl("....-..-.. ..:..:..", dat_combined$timestamp_est))
