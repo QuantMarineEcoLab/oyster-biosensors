@@ -1,0 +1,100 @@
+---
+title: "Over-Winter Exp."
+author: "Michaela Edwards"
+date: "2024-02-16"
+output: html_document
+---
+
+```{r, packages}
+library(pacman)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(multcompView)
+library(viridis)
+```
+
+```{r}
+theme.oyster<-  theme(panel.border=element_rect(color="Black", size=.8,fill=NA),
+  panel.background = element_rect(fill="White"),
+  panel.grid.major=element_blank(), 
+  panel.grid.minor=element_blank(),
+  axis.line=element_blank(),
+  axis.text=element_text(color="Black",size=20),
+  axis.title=element_text(color="Black",size=20),
+  strip.background = element_blank(),
+  strip.text.x = element_text(size = 20, color = "black"),
+  strip.text.y = element_text(size = 20, color = "black"),
+  text = element_text(size=20, color="black", family="serif"))
+```
+
+```{r}
+d0<-read.csv("2023-11-20_TO_2024-2-15.csv", header=T,na.strings="")
+
+colnames(d0) <- c("Date", "Time", "Seconds", "oyster.1", "oyster.2", "oyster.3", "oyster.4", "oyster.5", "oyster.6", "oyster.7", "oyster.8", "oyster.9", "oyster.10", "oyster.11", "oyster.12", "oyster.13", "oyster.14", "oyster.15")
+
+```
+
+```{r}
+ggplot(d0, aes(x = Date)) +
+  geom_line(aes(y = ID.1, color = "ID 1")) +
+  geom_line(aes(y = ID.2, color = "ID 2")) +
+  geom_line(aes(y = ID.3, color = "ID 3")) +
+  geom_line(aes(y = ID.4, color = "ID 4")) +
+  geom_line(aes(y = ID.5, color = "ID 5")) +
+  geom_line(aes(y = ID.6, color = "ID 6")) +
+  geom_line(aes(y = ID.7, color = "ID 7")) +
+  geom_line(aes(y = ID.8, color = "ID 8")) +
+  geom_line(aes(y = ID.9, color = "ID 9")) +
+  geom_line(aes(y = ID.10, color = "ID 10")) +
+  geom_line(aes(y = ID.11, color = "ID 11")) +
+  geom_line(aes(y = ID.12, color = "ID 12")) +
+  geom_line(aes(y = ID.13, color = "ID 13")) +
+  geom_line(aes(y = ID.14, color = "ID 14")) +
+  geom_line(aes(y = ID.15, color = "ID 15")) +
+  theme_bw() + theme(
+    legend.position = "right",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()) +
+  theme(legend.position = "right", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  xlab("Date") +
+  ylab("Gaping")
+```
+
+```{r}
+reverse_normalize <- function(X) {
+  oys <- ifelse(X < 300 | X > 900, NA, X)
+  (oys - max(oys, na.rm = TRUE)) / (min(oys, na.rm = TRUE) - max(oys, na.rm = TRUE))
+}
+oysters <- grep('^oyst', colnames(d0), value = TRUE)
+# Apply the reverse normalization function to oyster columns
+d1 <- apply(d0[, oysters], 2, reverse_normalize)
+
+# Combine the normalized results into a new data frame
+d1 <- data.frame(d1)
+
+# add gape to oyster columns
+colnames(d1) <- paste(oysters, 'gape', sep = "_")
+
+# Combine d1 back into d0
+d0 <- data.frame(cbind(seconds = d0$Seconds, Date_Time = mdy_hms(paste(d0$Date, d0$Time, sep = " ")), d1))
+
+# view dataset
+head(d0)
+str(d0)
+colnames(d0) <- c("seconds", "Date_Time", "ID.1", "ID.2", "ID.3", "ID.4", "ID.5", "ID.6", "ID.7", "ID.8", "ID.9", "ID.10", "ID.11", "ID.12", "ID.13", "ID.14", "ID.15")
+#long format
+d0_long<- gather(d0, oyster_identity, gaping, ID.1:ID.15, factor_key=TRUE)
+```
+
+```{r}
+ggplot(d0_long, aes(x = Date_Time, y = as.numeric(gaping))) +
+  geom_line() +
+  theme_bw() + theme(legend.position = "right") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  xlab("") +
+  ylab("gaping") +
+  theme.oyster +
+  facet_grid(oyster_identity ~ .)
+```
+

@@ -1,0 +1,444 @@
+---
+title: "oyster and blue mussel data check"
+author: "Michaela Edwards"
+date: "2024-05-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+setwd("~/Documents/Masters Research Overarching Files/Oyster Over-Winter/Data over experiement seperate")
+
+library(dplyr)
+library(pacman)
+library(ggplot2)
+library(tidyverse)
+library(tidyr)
+library(multcompView)
+library(viridis)
+library(scales)
+library(chron)
+library(zoo)
+library(patchwork)
+```
+
+
+```{r files}
+november_20th_to_january_11th <- read.csv("2023-11-20 mos 2024-1-11.csv", header = FALSE, stringsAsFactors = FALSE)
+
+january_17th_to_january_24th <- read.csv("2024-01-17 mos 2024-01-24.csv", header = FALSE, stringsAsFactors = FALSE)
+
+january_24th_to_january_25th <- read.csv("2024-01-24 mos 2024-01-25.csv", header = FALSE, stringsAsFactors = FALSE)
+
+january_26th_to_april_20th <- read.csv("2024-01-26 mos 2024-04-20.csv", header = FALSE, stringsAsFactors = FALSE)
+
+april_26th_to_april_27th <- read.csv("2024-04-26 mos 2024-04-27.csv", header = FALSE, stringsAsFactors = FALSE)
+ 
+may_3rd_to_may_17th <- read.csv("2024-05-03 mos 2024-05-17.csv", header = FALSE, stringsAsFactors = FALSE)
+
+```
+
+```{r data cleaning}
+#Remove anything that is an initializing row
+contains_initializing <- function(row) {
+  any(grepl("Initializ", row, ignore.case = TRUE))
+}
+#when there is missing data in a row caused by coolterm "initializing"
+is_shorter_than_16 <- function(row) {
+  length(na.omit(row)) < 16
+}
+
+#apply the remove initializing function to each dataframe
+november_20th_to_january_11th <- november_20th_to_january_11th[!apply(november_20th_to_january_11th, 1, contains_initializing), ]
+
+january_17th_to_january_24th <- january_17th_to_january_24th[!apply(january_17th_to_january_24th, 1, contains_initializing), ]
+
+january_24th_to_january_25th <- january_24th_to_january_25th[!apply(january_24th_to_january_25th, 1, contains_initializing), ]
+
+january_26th_to_april_20th <- january_26th_to_april_20th[!apply(january_26th_to_april_20th, 1, contains_initializing), ]
+
+april_26th_to_april_27th <- april_26th_to_april_27th[!apply(april_26th_to_april_27th, 1, contains_initializing), ]
+
+may_3rd_to_may_17th <- may_3rd_to_may_17th[!apply(may_3rd_to_may_17th, 1, contains_initializing), ]
+
+
+
+
+#apply the shorter than 16 columns function
+november_20th_to_january_11th <- november_20th_to_january_11th[!apply(november_20th_to_january_11th, 1, is_shorter_than_16), ]
+
+january_17th_to_january_24th <- january_17th_to_january_24th[!apply(january_17th_to_january_24th, 1, is_shorter_than_16), ]
+
+january_24th_to_january_25th <- january_24th_to_january_25th[!apply(january_24th_to_january_25th, 1, is_shorter_than_16), ]
+
+january_26th_to_april_20th <- january_26th_to_april_20th[!apply(january_26th_to_april_20th, 1, is_shorter_than_16), ]
+
+april_26th_to_april_27th <- april_26th_to_april_27th[!apply(april_26th_to_april_27th, 1, is_shorter_than_16), ]
+
+may_3rd_to_may_17th <- may_3rd_to_may_17th[!apply(may_3rd_to_may_17th, 1, is_shorter_than_16), ]
+
+
+
+```
+
+
+
+```{r}
+#splitting up by the tab between data-time and the first individual
+# Function to split rows if tab (\t) is present
+split_row <- function(row) {
+  if (any(grepl("\t", row))) {
+    return(unlist(strsplit(row, "\t")))
+  } else {
+    return(row)
+  }
+}
+
+# Apply the function to each row in each dataset
+november_20th_to_january_11th <- as.data.frame(t(apply(november_20th_to_january_11th, 1, split_row)), stringsAsFactors = FALSE)
+
+january_17th_to_january_24th <- as.data.frame(t(apply(january_17th_to_january_24th, 1, split_row)), stringsAsFactors = FALSE)
+
+january_24th_to_january_25th <- as.data.frame(t(apply(january_24th_to_january_25th, 1, split_row)), stringsAsFactors = FALSE)
+
+january_26th_to_april_20th <- as.data.frame(t(apply(january_26th_to_april_20th, 1, split_row)), stringsAsFactors = FALSE)
+
+april_26th_to_april_27th <- as.data.frame(t(apply(april_26th_to_april_27th, 1, split_row)), stringsAsFactors = FALSE)
+
+may_3rd_to_may_17th <- as.data.frame(t(apply(may_3rd_to_may_17th, 1, split_row)), stringsAsFactors = FALSE)
+```
+
+```{r}
+#adding headers to data
+headers <- c("Date_Time", "seconds", "ID1","ID2","ID3","ID4","ID5","ID6","ID7","ID8","ID9","ID10","ID11","ID12","ID13","ID14","ID15")
+
+names(november_20th_to_january_11th) <- headers
+names(january_17th_to_january_24th) <- headers
+names(january_24th_to_january_25th) <- headers
+names(january_26th_to_april_20th) <- headers
+names(april_26th_to_april_27th) <- headers
+names(may_3rd_to_may_17th) <- headers
+
+
+
+november_20th_to_january_11th$Date_Time <- as.POSIXct(november_20th_to_january_11th$Date_Time, format = "%Y-%m-%d %H:%M:%S")
+january_17th_to_january_24th$Date_Time <- as.POSIXct(january_17th_to_january_24th$Date_Time, format = "%Y-%m-%d %H:%M:%S")
+january_24th_to_january_25th$Date_Time <- as.POSIXct(january_24th_to_january_25th$Date_Time, format = "%Y-%m-%d %H:%M:%S")
+january_26th_to_april_20th$Date_Time <- as.POSIXct(january_26th_to_april_20th$Date_Time, format = "%Y-%m-%d %H:%M:%S")
+april_26th_to_april_27th$Date_Time <- as.POSIXct(april_26th_to_april_27th$Date_Time, format = "%Y-%m-%d %H:%M:%S")
+may_3rd_to_may_17th$Date_Time <- as.POSIXct(may_3rd_to_may_17th$Date_Time, format = "%Y-%m-%d %H:%M:%S")
+
+```
+
+```{r}
+#graphing raw data from files
+ggplot(november_20th_to_january_11th, aes(x = Date_Time)) +
+  geom_point(aes(y = ID1, color = "ID1")) +
+  geom_point(aes(y = ID2, color = "ID2")) +
+  geom_point(aes(y = ID3, color = "ID3")) +
+  geom_point(aes(y = ID4, color = "ID4")) +
+  geom_point(aes(y = ID5, color = "ID5")) +
+  geom_point(aes(y = ID6, color = "ID6")) +
+  geom_point(aes(y = ID7, color = "ID7")) +
+  geom_point(aes(y = ID8, color = "ID8")) +
+  geom_point(aes(y = ID9, color = "ID9")) +
+  geom_point(aes(y = ID10, color = "ID10")) +
+  geom_point(aes(y = ID11, color = "ID11")) +
+  geom_point(aes(y = ID12, color = "ID12")) +
+  geom_point(aes(y = ID13, color = "ID13")) +
+  geom_point(aes(y = ID14, color = "ID14")) +
+  geom_point(aes(y = ID15, color = "ID15")) +
+  theme_bw() + theme(
+    legend.position = "right",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()) +
+  theme(legend.position = "right", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  xlab("Date") +
+  ylab("Gaping")
+
+#next dataframe
+ggplot(january_24th_to_january_25th, aes(x = Date_Time)) +
+  geom_point(aes(y = ID1, color = "ID1")) +
+  geom_point(aes(y = ID2, color = "ID2")) +
+  geom_point(aes(y = ID3, color = "ID3")) +
+  geom_point(aes(y = ID4, color = "ID4")) +
+  geom_point(aes(y = ID5, color = "ID5")) +
+  geom_point(aes(y = ID6, color = "ID6")) +
+  geom_point(aes(y = ID7, color = "ID7")) +
+  geom_point(aes(y = ID8, color = "ID8")) +
+  geom_point(aes(y = ID9, color = "ID9")) +
+  geom_point(aes(y = ID10, color = "ID10")) +
+  geom_point(aes(y = ID11, color = "ID11")) +
+  geom_point(aes(y = ID12, color = "ID12")) +
+  geom_point(aes(y = ID13, color = "ID13")) +
+  geom_point(aes(y = ID14, color = "ID14")) +
+  geom_point(aes(y = ID15, color = "ID15")) +
+  theme_bw() + theme(
+    legend.position = "right",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()) +
+  theme(legend.position = "right", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  xlab("Date") +
+  ylab("Gaping")
+
+```
+
+
+```{r}
+#combining the dataframes
+november_20th_2023_to_may_17th_2024 <- rbind(november_20th_to_january_11th, january_17th_to_january_24th, january_24th_to_january_25th, january_26th_to_april_20th, april_26th_to_april_27th, may_3rd_to_may_17th)
+
+#semicolon removal
+remove_semicolon <- function(x) {
+  gsub(";", "", x)
+}
+
+november_20th_2023_to_may_17th_2024[ ] <- lapply(november_20th_2023_to_may_17th_2024,
+function(col){
+  if (is.character(col)){
+return(remove_semicolon(col))
+  }else{
+    return(col)
+  }
+})
+
+
+str(november_20th_2023_to_may_17th_2024)
+
+#making raw gaping data numeric
+# Identify columns that contain "ID" in their names
+gaping_info <- grep("ID", names(november_20th_2023_to_may_17th_2024), value = TRUE)
+
+# Convert these columns to numeric
+november_20th_2023_to_may_17th_2024[gaping_info] <- lapply(november_20th_2023_to_may_17th_2024[gaping_info], as.numeric)
+
+#checking datafrane
+str(november_20th_2023_to_may_17th_2024)
+```
+
+```{r}
+november_20th_2023_to_may_17th_2024$date <- as.Date(november_20th_2023_to_may_17th_2024$Date_Time)
+```
+
+
+```{r graph raw data}
+ggplot(november_20th_2023_to_may_17th_2024, aes(x = Date_Time)) +
+  geom_line(aes(y = ID1, color = "ID1")) +
+  geom_line(aes(y = ID2, color = "ID2")) +
+  geom_line(aes(y = ID3, color = "ID3")) +
+  geom_line(aes(y = ID4, color = "ID4")) +
+  geom_line(aes(y = ID5, color = "ID5")) +
+  geom_line(aes(y = ID6, color = "ID6")) +
+  geom_line(aes(y = ID7, color = "ID7")) +
+  geom_line(aes(y = ID8, color = "ID8")) +
+  geom_line(aes(y = ID9, color = "ID9")) +
+  geom_line(aes(y = ID10, color = "ID10")) +
+  geom_line(aes(y = ID11, color = "ID11")) +
+  geom_line(aes(y = ID12, color = "ID12")) +
+  geom_line(aes(y = ID13, color = "ID13")) +
+  geom_line(aes(y = ID14, color = "ID14")) +
+  geom_line(aes(y = ID15, color = "ID15")) +
+  theme_bw() + theme(
+    legend.position = "right",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()) +
+  theme(legend.position = "right", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  xlab("Date") +
+  ylab("Gaping")
+```
+
+```{r}
+may_3rd_to_may_17th[ ] <- lapply(may_3rd_to_may_17th,
+function(col){
+  if (is.character(col)){
+return(remove_semicolon(col))
+  }else{
+    return(col)
+  }
+})
+
+chr_to_numeric <- grep("ID", names(may_3rd_to_may_17th), value = TRUE)
+
+# Convert these columns to numeric
+may_3rd_to_may_17th[chr_to_numeric] <- lapply(may_3rd_to_may_17th[chr_to_numeric], as.numeric)
+
+#checking datafrane
+str(may_3rd_to_may_17th)
+
+ggplot(may_3rd_to_may_17th, aes(x = Date_Time)) +
+  geom_line(aes(y = ID1, color = "ID1")) +
+  geom_line(aes(y = ID2, color = "ID2")) +
+  geom_line(aes(y = ID3, color = "ID3")) +
+  geom_line(aes(y = ID4, color = "ID4")) +
+  geom_line(aes(y = ID5, color = "ID5")) +
+  geom_line(aes(y = ID6, color = "ID6")) +
+  geom_line(aes(y = ID7, color = "ID7")) +
+  geom_line(aes(y = ID8, color = "ID8")) +
+  geom_line(aes(y = ID9, color = "ID9")) +
+  geom_line(aes(y = ID10, color = "ID10")) +
+  geom_line(aes(y = ID11, color = "ID11")) +
+  geom_line(aes(y = ID12, color = "ID12")) +
+  geom_line(aes(y = ID13, color = "ID13")) +
+  geom_line(aes(y = ID14, color = "ID14")) +
+  geom_line(aes(y = ID15, color = "ID15")) +
+  theme_bw() + theme(
+    legend.position = "right",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()) +
+  theme(legend.position = "right", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  xlab("Date") +
+  ylab("Gaping")
+```
+
+```{r}
+#plotting raw data in a panel
+may_3rd_to_may_17th[id_columns] <- lapply(may_3rd_to_may_17th[id_columns], as.numeric)
+
+# Reshape data into long format
+may_3rd_to_may_17th_long <- pivot_longer(may_3rd_to_may_17th, cols = id_columns, names_to = "ID", values_to = "value")
+
+# Plot using facet_wrap
+ggplot(may_3rd_to_may_17th_long, aes(x = Date_Time, y = value, color = ID)) +
+  geom_line() +
+  theme_classic() +
+  theme(
+    legend.position = "right",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  )+
+  xlab("Date") +
+  ylab("Gaping") +
+  facet_wrap(~ ID, scales = "free_y", ncol = 2)
+```
+
+
+
+```{r}
+ggplot(november_20th_2023_to_may_17th_2024, aes(x = Date_Time)) +
+  geom_point(aes(y = ID1, color = "ID1")) +
+  theme_bw() +
+  xlab("Date") +
+  ylab("Gaping")
+```
+
+
+```{r}
+#removing broken values
+id_columns <- grep("ID", names(november_20th_2023_to_may_17th_2024))
+
+# Loop through each ID column and each row, replacing values as needed
+for (col_index in id_columns) {
+  for (row_index in 1:nrow(november_20th_2023_to_may_17th_2024)) {
+    if (november_20th_2023_to_may_17th_2024[row_index, col_index] > 900 | november_20th_2023_to_may_17th_2024[row_index, col_index] < 380) {
+      november_20th_2023_to_may_17th_2024[row_index, col_index] <- NA
+    }
+  }
+}
+```
+
+
+
+
+```{r}
+# Define the reverse_normalize function
+reverse_normalize <- function(X) {
+  oys <- ifelse(X < 450 | X > 900, NA, X)
+  (oys - max(oys, na.rm = TRUE)) / (min(oys, na.rm = TRUE) - max(oys, na.rm = TRUE))
+}
+
+# Define the normalize function
+normalize <- function(X) {
+  oys <- ifelse(X < 380 | X > 550, NA, X)
+  min_val <- min(oys, na.rm = TRUE)
+  adjusted <- oys - min_val
+  max_val <- max(adjusted, na.rm = TRUE)
+  normalized <- adjusted / max_val
+  abs_normalized <- abs(normalized)
+  return(abs_normalized)
+}
+
+oyster_ids_reverse <- c("ID11", "ID10", "ID7", "ID6", "ID5", "ID2")
+oyster_ids_normalize <- c("ID1", "ID3", "ID4", "ID8", "ID9", "ID12", "ID13", "ID14", "ID15")
+
+
+november_may_group <- november_20th_2023_to_may_17th_2024 %>% 
+  group_by(date)
+
+# Apply reverse normalization to specified columns
+
+for (col_name in oyster_ids_reverse) {
+  if (col_name %in% colnames(november_may_group)) {
+    november_may_group[[col_name]] <- reverse_normalize(november_may_group[[col_name]])
+  }
+}
+
+# Apply normalization to specified columns
+for (col_name in oyster_ids_normalize) {
+  if (col_name %in% colnames(november_may_group)) {
+    november_may_group[[col_name]] <- normalize(november_may_group[[col_name]])
+  }
+}
+
+
+november_20th_2023_to_may_17th_2024_norm <- ungroup(november_may_group)
+
+
+# Gather the data into long format
+nov_may_long <- pivot_longer(november_20th_2023_to_may_17th_2024_norm, cols = starts_with("ID"), names_to = "Identity", values_to = "gaping")
+
+nov_may_long <- nov_may_long[order(nov_may_long$Identity), ]
+
+# View the resulting long format dataset
+head(nov_may_long)
+
+str(nov_may_long)
+
+```
+
+```{r}
+nov_may_long<-merge(nov_may_long, a, all=T)
+nov_may_long<-nov_may_long %>% 
+  filter(!is.na(gaping), !is.na(foul_treatment)) %>% 
+  mutate(Hours=as.numeric(second)/60)
+str(nov_may_long)
+
+nov_may_long$date <- as.Date(nov_may_long$date, format("%m/%d/%y"))
+
+nov_may_long$time <- times(nov_may_long$time)
+str(nov_may_long)
+```
+
+```{r}
+ggplot(nov_may_long, aes(x = Date_Time, y = as.numeric(gaping))) +
+  geom_line() +
+  theme_bw() + theme(legend.position = "right") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  xlab("") +
+  ylab("gaping") +
+  facet_grid(Identity ~ .)
+
+#plotting each of the graphs separately
+# Unique identities
+unique_identities <- unique(nov_may_long$Identity)
+
+for (identity in unique_identities) {
+  # Filter the data for the current identity
+  data_subset <- subset(nov_may_long, Identity == identity)
+  
+  # Create the plot
+  p <- ggplot(data_subset, aes(x = Date_Time, y = gaping)) +
+    geom_line() +
+    theme_bw() + theme(legend.position = "right") +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+    xlab("") +
+    ylab("gaping") +
+    ggtitle(paste("Identity:", identity))
+  
+  # Print the plot to display it in the R plotting window
+  print(p)
+}
+```
+
