@@ -24,7 +24,6 @@ combined_dir <- "~/Library/CloudStorage/OneDrive-USNH/QMEL/0_People/GradStudents
 # Get data file names
 i <- list.files(raw_dir, pattern = "txt", full.names = T)
   
-# Read in all data files
 dat <- rbindlist(lapply(i, fread))
 
 # ---------- MANIPULATE COLUMNS ----------
@@ -55,6 +54,8 @@ dat <- dat %>%
            (timestamp_est < oow_start2 | timestamp_est > oow_end2))
 
 # --------- QAQC Num.1 ---------------------------
+dat <- unique(dat)
+
 # Create differences between times
 dat$diffs <- diff(c(dat$unixtime[1]-1,dat$unixtime))
 
@@ -62,7 +63,7 @@ dat$diffs <- diff(c(dat$unixtime[1]-1,dat$unixtime))
 which(dat$diffs < 0)
 
 # View times where data is going backwards 
-test <- dat[38575:38577,]
+test <- dat[57354:57360,]
 
 # Change timestamp: if diffs are less than 0, look back at the previous timestamp and add 15 seconds
 dat <- dat %>%
@@ -113,6 +114,8 @@ dat_pivot_15min <- dat_pivot %>%
 
 # Rbind all together
 dat_combined <- rbindlist(l = list(dat_pivot, dat_pivot_1min, dat_pivot_15min), fill = T)
+
+tz(dat_combined$timestamp_est) <- "UTC"
 
 # ----------- QAQC ------------
 # Are there any duplicated combinations that shouldn't be duplicated?
