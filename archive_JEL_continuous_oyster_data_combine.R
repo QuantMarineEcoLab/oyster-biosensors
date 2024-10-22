@@ -8,7 +8,7 @@ library(data.table)
 library(lubridate)
 
 # Set source dirs
-raw_dir <- "/Users/sel/Library/CloudStorage/OneDrive-USNH/Oyster Biosensor/0_InProgressExperiments/2023 - 2024 Continuous system on oysters and mussels/downloaded data over duration of exp"
+raw_dir <- "/Users/sel/Library/CloudStorage/OneDrive-USNH/Oyster Biosensor/0_InProgressExperiments/2023 - 2024 Continuous system on oysters and mussels/1_raw sensor data"
 
 old_combined_dir <- "/Users/sel/Library/CloudStorage/OneDrive-USNH/Oyster Biosensor/0_InProgressExperiments/2023 - 2024 Continuous system on oysters and mussels/Data combined/Old versions"
 
