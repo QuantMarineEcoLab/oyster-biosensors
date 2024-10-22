@@ -115,6 +115,8 @@ write.table(combined_dat, file = file.path(combined_dir,
             append = F, sep = ",", na = "NA", dec = ".", row.names = F, col.names = T)
 
 # ------------------- ROUND TO NEAREST 1 MIN & 15 MIN -----------------------
+min_date <- "2023-11-20"
+max_date <- "2024-09-22"
 # Read in data
 combined_dat <- fread(file.path(combined_dir, paste0("JEL-continuous-oyster_", min_date, "_TO_", max_date, "_twelvesec.csv")))
 
@@ -152,7 +154,7 @@ which(!grepl("....-..-.. ..:..:..", combined_dat_1min$minute_floor))
 filename <- file.path(combined_dir, paste0("JEL-continuous-oyster_", min_date, "_TO_", max_date, "_1min.csv"))
 
 combined_dat_1min %>%
-  pivot_wider(id_cols = minute_floor, names_from = "oyster_id", values_from = "mean_voltage") %>%
+  # pivot_wider(id_cols = minute_floor, names_from = "oyster_id", values_from = "mean_voltage") %>%
   write_csv(file = filename)
 
 # Create a 15-min rounded dataset
@@ -177,7 +179,7 @@ combined_dat_15min$fifteenmin_floor <- format(combined_dat_15min$fifteenmin_floo
 which(!grepl("....-..-.. ..:..:..", combined_dat_15min$fifteenmin_floor))
 
 combined_dat_15min %>%
-  pivot_wider(id_cols = fifteenmin_floor, names_from = "oyster_id", values_from = "mean_voltage") %>%
+  # pivot_wider(id_cols = fifteenmin_floor, names_from = "oyster_id", values_from = "mean_voltage") %>%
   write_csv(file = filename)
 
 
