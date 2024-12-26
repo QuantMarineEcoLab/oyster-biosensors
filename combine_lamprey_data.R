@@ -2,9 +2,6 @@
 # Selina Cheng
 
 # Add in some scenario somewhere where you save the last timestamp in the filename, strsplit the filename and check to see if the timestamp is in your time, filter it, etc. etc save
-
-# There is almost certainly a timestamp shift issue with reading in old data and appending new data to it NEEDS TO BE FIXED NEXT TIME I GET NEW DATA
-
 # --------- SET UP ------------
 # Load libraries
 library(tidyverse)
@@ -32,7 +29,7 @@ names(dat)[1] <- "unixtime"
 
 # Create timestamp_est column
 # (time was/should be set to EST on Arduino)
-dat$timestamp_est <- as.POSIXct(dat$unixtime, origin = "1970-01-01")
+dat$timestamp_est <- as.POSIXct(dat$unixtime, origin = "1970-01-01", tz = "EST")
 
 # Remove extra columns
 dat <- dat %>%
@@ -63,7 +60,7 @@ dat$diffs <- diff(c(dat$unixtime[1]-1,dat$unixtime))
 which(dat$diffs < 0)
 
 # View times where data is going backwards 
-test <- dat[57354:57360,]
+test <- dat[115636:115640,]
 
 # Change timestamp: if diffs are less than 0, look back at the previous timestamp and add 15 seconds
 dat <- dat %>%
@@ -76,7 +73,7 @@ dat$diffs <- diff(c(dat$unixtime[1]-1,dat$unixtime))
 which(dat$diffs < 0)
 
 # Recreate timestamp_est
-dat$timestamp_est <- as.POSIXct(dat$unixtime, origin = "1970-01-01")
+dat$timestamp_est <- as.POSIXct(dat$unixtime, origin = "1970-01-01", tz = "EST")
 
 # Recreate diffs with timestamp_est and see if any times are going backwards
 dat$diffs <- diff(c(dat$timestamp_est[1]-1,dat$timestamp_est))
@@ -93,34 +90,40 @@ dat <- dat %>%
 dat_pivot <- pivot_longer(dat, cols = names(dat)[grepl("-", names(dat))], 
                           names_to = "vars", values_to = "value")
 
-# --------- ROUND TIMESTAMPS ----------
-# Add interval column
-dat_pivot <- dat_pivot %>%
-  mutate(interval = "15_sec")
+dat_combined <- dat_pivot
 
-# Create 1 min rounded dataset
-dat_pivot_1min <- dat_pivot %>%
-  mutate(timestamp_est = floor_date(timestamp_est, "minute")) %>%
-  group_by(timestamp_est, vars) %>%
-  summarise(value = mean_rm(value)) %>%
-  mutate(interval = "1_min")
-
-# Create a 15-min rounded dataset
-dat_pivot_15min <- dat_pivot %>%
-  mutate(timestamp_est = floor_date(timestamp_est, "15 minute")) %>%
-  group_by(timestamp_est, vars) %>%
-  summarise(value = mean_rm(value)) %>%
-  mutate(interval = "15_min")
-
-# Rbind all together
-dat_combined <- rbindlist(l = list(dat_pivot, dat_pivot_1min, dat_pivot_15min), fill = T)
-
-tz(dat_combined$timestamp_est) <- "UTC"
+# # --------- ROUND TIMESTAMPS ----------
+# # Add interval column
+# dat_pivot <- dat_pivot %>%
+#   mutate(interval = "15_sec")
+# 
+# # Create 1 min rounded dataset
+# dat_pivot_1min <- dat_pivot %>%
+#   mutate(timestamp_est = floor_date(timestamp_est, "minute")) %>%
+#   group_by(timestamp_est, vars) %>%
+#   summarise(value = mean_rm(value)) %>%
+#   mutate(interval = "1_min")
+# 
+# # Create a 15-min rounded dataset
+# dat_pivot_15min <- dat_pivot %>%
+#   mutate(timestamp_est = floor_date(timestamp_est, "15 minute")) %>%
+#   group_by(timestamp_est, vars) %>%
+#   summarise(value = mean_rm(value)) %>%
+#   mutate(interval = "15_min")
+# 
+# # Rbind all together
+# dat_combined <- rbindlist(l = list(dat_pivot, dat_pivot_1min, dat_pivot_15min), fill = T)
+# 
+# tz(dat_combined$timestamp_est) <- "UTC"
 
 # ----------- QAQC ------------
 # Are there any duplicated combinations that shouldn't be duplicated?
+# summary_table <- dat_combined %>%
+#   group_by(timestamp_est, vars, interval) %>%
+#   summarise(count = n())
+
 summary_table <- dat_combined %>%
-  group_by(timestamp_est, vars, interval) %>%
+  group_by(timestamp_est, vars) %>%
   summarise(count = n())
 
 # Print which rows > 1 
