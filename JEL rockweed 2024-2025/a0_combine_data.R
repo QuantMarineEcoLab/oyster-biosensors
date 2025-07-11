@@ -1,8 +1,20 @@
-# Read in and combine JEL data
+# Script goals:
+# 1) Read in and combine JEL data
+
+# Notes:
+# I download data weekly (sort of) so all individual files need to be read, joined, and cleaned.
+# This is a semi-manual process because the Arduino time is not always accurate.
+# Unixtime in successive rows of data should increase as row number increases but this is not always the case; sometimes the Arduino goes back in time (erroneously) and needs to be corrected in R.
+# Usually this can just be fixed by looking back at the previous row of data and adding 15s (or whatever the set data interval was)
+
+# WISHLIST:
+# Add row number as you read in data. If you plot row number against unixtime it should be a straight line.
+
+# old wish:
+# Add in some scenario somewhere where you save the last timestamp in the filename, strsplit the filename and check to see if the timestamp is in your time, filter it, etc. etc save
+
 # Selina Cheng
 # Created 2025-01-06 
-
-# Add in some scenario somewhere where you save the last timestamp in the filename, strsplit the filename and check to see if the timestamp is in your time, filter it, etc. etc save
 # --------- SET UP ------------
 rm(list = ls())
 
@@ -96,7 +108,7 @@ names(dat)[1] <- "unixtime"
 dat <- dat %>%
   select(-c("BoxTemp", "B-Volts", contains("V2")))
 
-# --------- QAQC --------------
+# --------- QAQC TIMESTAMPS --------------
 # Remove any duplicate rows
 dat <- unique(dat)
 

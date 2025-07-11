@@ -1,6 +1,13 @@
-# Read in manually cleaned data, remove maintenance times
-# Round to 1min
+# Script goals:
+# 1) Read in manually cleaned data, remove maintenance times
+# 2) Round to 1min
+
+# Notes:
+# Erroneous data points were manually removed in JMP. This is where "rockweed experiment_manual clean.txt" came from.
+
 # Selina Cheng
+
+# ----- SET UP ---------
 # Load libraries
 library(tidyverse)
 library(lubridate)
@@ -8,12 +15,14 @@ library(data.table)
 
 mean_rm <- function(x){mean(x, na.rm = T)}
 
+# ------- LOAD DATA ----------
 # Read in clean data
 oyster_dat <- fread("~/Library/CloudStorage/OneDrive-USNH/Oyster Biosensor/0_InProgressExperiments/2024 JEL field/data/rockweed experiment_manual clean.txt")
 
 # Remove times when there was maintenance happening
 maintenance <- fread("~/Library/CloudStorage/OneDrive-USNH/Oyster Biosensor/0_InProgressExperiments/2024 JEL field/data/schema/sensor_maintenance_long.csv")
 
+# ------- REMOVE MAINTENANCE DATA ------------
 maintenance <- maintenance %>%
   select(-V7)
 
@@ -53,6 +62,7 @@ oyster_dat <- oyster_dat %>%
   filter(is.na(category)) %>%
   select(-c(16:22))
 
+# --------- 1 MIN AVERAGE ---------
 # Average data to 1 min
 # Round timestamps to average oyster gape data
 oyster_dat <- oyster_dat %>%
@@ -69,6 +79,7 @@ oyster_dat_1min <- oyster_dat %>%
 end <- Sys.time()
 end-start
 
+# ----- SAVE DATA -------
 # Write file
 min_date <- min(date(oyster_dat_1min$minute_floor))
 max_date <- max(date(oyster_dat_1min$minute_floor))
@@ -87,6 +98,7 @@ oyster_dat_1min %>%
   # pivot_wider(id_cols = minute_floor, names_from = "oyster_id", values_from = "mean_voltage") %>%
   write_csv(file = filename)
 
+# --------- brief QAQC -----------
 # Do some QAQC checks?
 summary <- oyster_dat_1min %>%
   ungroup() %>%
